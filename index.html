@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>九九れんしゅう（歌モード）</title>
+  <title>九九れんしゅう</title>
   <style>
     :root{ --bg:#0b1020; --card:#111933; --acc:#4fa3ff; --ok:#22c55e; --bad:#ef4444; --text:#e9eefb; }
     *{box-sizing:border-box}
@@ -14,38 +14,34 @@
     .card{background:linear-gradient(180deg,rgba(255,255,255,.05),transparent 30%) ,var(--card);border:1px solid rgba(255,255,255,.08);padding:16px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
     .row{display:flex;gap:12px;flex-wrap:wrap}
     label{font-size:14px;opacity:.9}
-    select,button,input[type="number"],input[type="text"]{background:#0b1430;color:var(--text);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:10px 12px;font-size:16px}
+    select,button,input[type="text"]{background:#0b1430;color:var(--text);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:10px 12px;font-size:16px}
     button{cursor:pointer}
     button.primary{background:var(--acc);border-color:transparent;color:#001326;font-weight:700}
-    button.ghost{background:transparent}
     button.lg{font-size:20px;padding:12px 16px;border-radius:14px}
     .controls{display:grid;grid-template-columns:1fr;gap:12px}
-    @media(min-width:720px){.controls{grid-template-columns:1.2fr 1fr .8fr 1.1fr}}
-    .problem{display:flex;align-items:center;justify-content:center;gap:12px;font-weight:800;font-size:clamp(22px,7vw,56px);min-height:96px}
-    .answerWrap{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:8px}
+    @media(min-width:720px){.controls{grid-template-columns:1.2fr 1fr 1.1fr}}
+    .problem{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-weight:800;font-size:clamp(22px,7vw,56px);min-height:130px}
+    .correctMsg{font-size:24px;color:var(--ok);font-weight:700;min-height:1.2em}
+    .hintText{font-size:20px;opacity:0.85;color:#ffd966;min-height:1.2em}
+    .feedbackMsg{font-size:18px;margin-top:2px;min-height:1.2em}
+    .answerWrap{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:8px;flex-wrap:wrap}
     .answerWrap input{font-size:clamp(20px,5vw,36px);width:8ch;text-align:center}
     .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:6px 10px;font-size:13px;opacity:.9}
     .status{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
     .bar{height:10px;background:#0b1430;border-radius:999px;overflow:hidden}
     .bar .fill{height:100%;background:linear-gradient(90deg,var(--acc),#8ef0ff);width:0%}
-    .result{margin-top:12px;font-size:16px}
     .grid9{display:grid;grid-template-columns:repeat(9,1fr);gap:6px;margin-top:10px}
     .chip{background:#0b1430;border:1px solid rgba(255,255,255,.15);padding:8px;border-radius:10px;text-align:center}
     .chip.done{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.5)}
     .chip.miss{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.5)}
-    .hint{opacity:.8;font-size:13px}
-    .sr{position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden}
-  .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:360px;margin:16px auto}
-.keypad button{padding:20px 0;font-size:1.4em;border-radius:14px}
-</style>
+    .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:360px;margin:16px auto}
+    .keypad button{padding:20px 0;font-size:1.4em;border-radius:14px}
+  </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>九九れんしゅう <span class="pill">🎵 歌モード対応</span></h1>
-      <div>
-        <button class="ghost" id="btnHelp" aria-label="使い方">❓ つかいかた</button>
-      </div>
+      <h1>九九れんしゅう <span class="pill">🎵 歌モード</span></h1>
     </header>
 
     <section class="card controls" aria-label="設定">
@@ -60,7 +56,7 @@
         <div>
           <label for="dan">だん</label><br>
           <select id="dan" aria-label="選ぶだん">
-            <option value="all">ぜんぶ(1〜9×1〜9)</option>
+            <option value="all">ぜんぶ</option>
             <option value="1">1のだん</option>
             <option value="2">2のだん</option>
             <option value="3">3のだん</option>
@@ -72,35 +68,32 @@
             <option value="9">9のだん</option>
           </select>
         </div>
-        <div>
-          <label for="readMode">よみあげ</label><br>
-          <select id="readMode" aria-label="よみあげ設定">
-            <option value="off">おふ</option>
-            <option value="on">問題をよむ</option>
-            <option value="song">九九のうた</option>
-          </select>
-        </div>
         <div class="row">
-          <button id="btnStart" class="primary lg" aria-label="スタート">▶ スタート</button>
-          <button id="btnSpeak" class="lg" aria-label="問題をよみあげ">🗣️ よみあげ</button>
-          <button id="btnSingDan" class="lg" aria-label="だんを歌う">🎵 だんを歌う</button>
+          <button id="btnStart" class="primary lg">▶ スタート</button>
+          <button id="btnSingOne" class="lg">🎵 この問題を歌う</button>
+          <button id="btnSingAll" class="lg">🎵 段を全部歌う</button>
         </div>
       </div>
 
       <div class="status" style="margin-top:6px">
-        <div class="pill" id="pillInfo">問題数: <span id="total">0</span> / 正解: <span id="correct">0</span> / まちがい: <span id="wrong">0</span> / 連続正解: <span id="streak">0</span></div>
+        <div class="pill">問題数: <span id="total">0</span> / 正解: <span id="correct">0</span> / まちがい: <span id="wrong">0</span> / 連続正解: <span id="streak">0</span></div>
         <div class="pill">ベストれんぞく: <span id="best">0</span></div>
       </div>
       <div class="bar" aria-hidden="true"><div class="fill" id="progress"></div></div>
     </section>
 
     <section class="card" style="margin-top:14px">
-      <div id="problem" class="problem" aria-live="polite" aria-atomic="true">スタートをおしてね</div>
+      <div id="problem" class="problem" aria-live="polite" aria-atomic="true">
+        <div id="correctMsg" class="correctMsg"></div>
+        <div id="hintArea" class="hintText"></div>
+        <div id="feedback" class="feedbackMsg"></div>
+        <div id="questionText">スタートをおしてね</div>
+      </div>
       <div class="answerWrap">
-        <label class="sr" for="answer">こたえ</label>
         <input id="answer" type="text" inputmode="none" placeholder="こたえ" readonly disabled />
         <button id="btnSubmit" class="primary" disabled>こたえる</button>
-        <button id="btnNext" disabled>つぎへ ▶</button>
+        <button id="btnGiveUp" disabled>わからない（×）</button>
+        <button id="btnHint" disabled>ヒント（よみ）</button>
       </div>
       <div id="keypad" class="keypad" role="group" aria-label="数字キー">
         <button data-digit="1">1</button>
@@ -116,204 +109,176 @@
         <button data-digit="0">0</button>
         <button data-action="back">⌫</button>
       </div>
-      <div id="feedback" class="result" aria-live="polite"></div>
       <div id="board" class="grid9" aria-label="進み具合"></div>
-      <p class="hint">Enterキーでこたえ / Spaceで次へ。スマホは数字キーボードが出ます。</p>
     </section>
   </div>
 
-  <dialog id="dlgHelp">
-    <form method="dialog" style="max-width:680px">
-      <h3>つかいかた</h3>
-      <ol>
-        <li>モードと「だん」をえらんで <b>スタート</b>。</li>
-        <li>こたえを入れて <b>こたえる</b>。正解なら自動で次へ。</li>
-        <li><b>🗣️ よみあげ</b>: 「問題をよむ」か「九九のうた」を選べます。<br>「だんを歌う」は選んだだん（2のだんなど）を最初からさいごまで歌います。</li>
-      </ol>
-      <p>ベストれんぞくは端末に保存されます（localStorage）。</p>
-      <div style="display:flex;gap:8px;justify-content:flex-end">
-        <button value="cancel">とじる</button>
-      </div>
-    </form>
-  </dialog>
-
   <script>
-// ===== 初期参照 =====
-const $ = (s)=>document.querySelector(s);
-const modeEl = $('#mode');
-const danEl = $('#dan');
-const readModeEl = $('#readMode');
-const startBtn = $('#btnStart');
-const speakBtn = $('#btnSpeak');
-const singDanBtn = $('#btnSingDan');
-const problemEl = $('#problem');
-const answerEl = $('#answer');
-const submitBtn = $('#btnSubmit');
-const nextBtn = $('#btnNext');
-const feedbackEl = $('#feedback');
-const boardEl = $('#board');
-const totalEl = $('#total');
-const correctEl = $('#correct');
-const wrongEl = $('#wrong');
-const streakEl = $('#streak');
-const bestEl = $('#best');
-const progressEl = $('#progress');
-const dlgHelp = document.getElementById('dlgHelp');
-const btnHelp = document.getElementById('btnHelp');
-const keypadEl = document.getElementById('keypad');
+  // ===== 要素参照 =====
+  const $ = (s)=>document.querySelector(s);
+  const modeEl=$('#mode'), danEl=$('#dan');
+  const startBtn=$('#btnStart'), singOneBtn=$('#btnSingOne'), singAllBtn=$('#btnSingAll');
+  const questionEl=$('#questionText'), answerEl=$('#answer'), submitBtn=$('#btnSubmit');
+  const giveUpBtn=$('#btnGiveUp'), hintBtn=$('#btnHint');
+  const feedbackEl=$('#feedback'), hintArea=$('#hintArea'), boardEl=$('#board'), correctMsgEl=$('#correctMsg');
+  const totalEl=$('#total'), correctEl=$('#correct'), wrongEl=$('#wrong'), streakEl=$('#streak'), bestEl=$('#best'), progressEl=$('#progress');
+  const keypadEl=$('#keypad');
 
-// ===== 状態 =====
-let problems = [];
-let idx = 0;
-let correct = 0;
-let wrong = 0;
-let streak = 0;
-let best = Number(localStorage.getItem('kuku_best_streak')||0);
-if(bestEl) bestEl.textContent = best;
+  // ===== 状態 =====
+  let problems=[], idx=0, correct=0, wrong=0, streak=0;
+  let best=Number(localStorage.getItem('kuku_best_streak')||0);
+  bestEl.textContent=best;
 
-// ===== 出題生成 =====
-function buildProblems(){
-  const list=[];
-  const dan = danEl.value;
-  const mults = dan==='all' ? [...Array(9).keys()].map(i=>i+1) : [Number(dan)];
-  for(const a of mults){ for(let b=1;b<=9;b++) list.push({a,b,done:false,miss:false}); }
-  if(modeEl.value==='random') shuffle(list);
-  return list;
-}
-function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]] } }
-
-// ===== 画面描画 =====
-function renderBoard(){
-  boardEl.innerHTML='';
-  problems.forEach((p)=>{
-    const d=document.createElement('div');
-    d.className='chip'+(p.done?' done':'')+(p.miss?' miss':'');
-    d.textContent=`${p.a}×${p.b}`;
-    d.title = p.done? (p.miss? 'まちがい→正解':'正解'): 'まだ';
-    boardEl.appendChild(d);
-  });
-}
-
-// ===== 音声 =====
-function speak(text, rate=1.0, pitch=1.0){
-  try{
-    if(!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang='ja-JP'; u.rate=rate; u.pitch=pitch; u.volume=1.0;
-    const voices = speechSynthesis.getVoices();
-    const jp = voices.find(v=>v.lang && v.lang.startsWith('ja'));
-    if(jp) u.voice = jp;
-    speechSynthesis.speak(u);
-  }catch(e){ console.error(e); }
-}
-
-// ===== 九九の歌ユーティリティ =====
-const OLD_NUM = {1:'いち',2:'に',3:'さん',4:'し',5:'ご',6:'ろく',7:'しち',8:'はち',9:'く'};
-function numOld(n){
-  if(n<=9) return OLD_NUM[n];
-  const t = Math.floor(n/10), u = n%10;
-  const ten = (t===1?'':(t===4?'し':t===7?'しち':t===9?'く':OLD_NUM[t])) + 'じゅう';
-  return ten + (u? OLD_NUM[u] : '');
-}
-function phraseSong(a,b){ return `${OLD_NUM[a]}${OLD_NUM[b]}が${numOld(a*b)}`; }
-function danSong(a){ const lines=[]; for(let b=1;b<=9;b++){ lines.push(phraseSong(a,b)); } return lines; }
-
-// ===== 出題制御 =====
-function current(){ return problems[idx]; }
-
-function showProblem(){
-  const p=current();
-  if(!p){ finish(); return; }
-  problemEl.textContent = `${p.a} × ${p.b} = ？`;
-  answerEl.value='';
-  // ボタン入力前提
-  answerEl.readOnly = true;
-  answerEl.disabled=false;
-  submitBtn.disabled=false;
-  nextBtn.disabled=true;
-  answerEl.focus();
-  if(readModeEl.value==='on')      speak(`${p.a} かける ${p.b} は？`, 0.98, 1.0);
-  else if(readModeEl.value==='song') speak(phraseSong(p.a, p.b), 0.95, 1.05);
-  totalEl.textContent = problems.length; correctEl.textContent = correct; wrongEl.textContent = wrong; streakEl.textContent = streak;
-  progressEl.style.width = `${Math.round((idx)/problems.length*100)}%`;
-}
-
-function start(){
-  correct=0; wrong=0; streak=0;
-  problems = buildProblems(); idx = 0;
-  feedbackEl.textContent='';
-  renderBoard();
-  showProblem();
-}
-
-function submit(){
-  const p=current(); if(!p) return;
-  const val = Number(answerEl.value);
-  const ok = (p.a*p.b)===val;
-  if(ok){
-    correct++; streak++; p.done=true;
-    feedbackEl.innerHTML = `✅ 正解！ <b>${p.a}×${p.b}=${p.a*p.b}</b>`;
-    if(streak>best){ best=streak; localStorage.setItem('kuku_best_streak',String(best)); bestEl.textContent=best; }
-    renderBoard(); idx++;
-    nextBtn.disabled=false; submitBtn.disabled=true; answerEl.disabled=true;
-    setTimeout(()=>{ showProblem(); }, 450);
-  }else{
-    wrong++; streak=0; p.miss=true;
-    feedbackEl.innerHTML = `❌ ちがうよ。もういちど！`;
-    if(readModeEl.value==='on') speak(`${p.a} かける ${p.b} は？`);
-    if(readModeEl.value==='song') speak(phraseSong(p.a, p.b), 0.95, 1.05);
-    renderBoard();
+  // ===== 出題生成 =====
+  function buildProblems(){
+    const list=[]; const dan=danEl.value;
+    const mults = (dan==='all') ? [...Array(9).keys()].map(i=>i+1) : [Number(dan)];
+    for(const a of mults){ for(let b=1;b<=9;b++){ list.push({a,b,done:false,miss:false}); } }
+    if(modeEl.value==='random') shuffle(list);
+    return list;
   }
-  correctEl.textContent = correct; wrongEl.textContent = wrong; streakEl.textContent = streak;
-  progressEl.style.width = `${Math.round((idx)/problems.length*100)}%`;
-}
+  function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } }
 
-function next(){ if(idx>=problems.length){ finish(); return; } showProblem(); }
+  // ===== 盤面 =====
+  function renderBoard(){
+    boardEl.innerHTML='';
+    problems.forEach(p=>{
+      const d=document.createElement('div');
+      d.className='chip'+(p.done?' done':'')+(p.miss?' miss':'');
+      d.textContent=`${p.a}×${p.b}`;
+      d.title = p.done? (p.miss? 'まちがい→正解':'正解'): 'まだ';
+      boardEl.appendChild(d);
+    });
+  }
 
-function finish(){
-  problemEl.textContent = 'おつかれさま！ ぜんぶおわったよ 🎉';
-  answerEl.disabled=true; submitBtn.disabled=true; nextBtn.disabled=true;
-  progressEl.style.width = '100%';
-  const rate = problems.length? Math.round(correct/problems.length*100):0;
-  const stars = rate>=95? '★★★' : rate>=80? '★★' : rate>=60? '★' : '—';
-  feedbackEl.innerHTML = `結果: 正解 <b>${correct}</b> / ${problems.length}（正答率 ${rate}%）<br>スター: <b>${stars}</b>`;
-}
+  // ===== 九九のうた =====
+  const CHANT = { '1x1':'いんいちがいち','1x2':'いんにがに','1x3':'いんさんがさん','1x4':'いんしがし','1x5':'いんごがご','1x6':'いんろくがろく','1x7':'いんしちがしち','1x8':'いんはちがはち','1x9':'いんくがく',
+    '2x1':'にいちがに','2x2':'ににんがし','2x3':'にさんがろく','2x4':'にしがはち','2x5':'にごじゅう','2x6':'にろくじゅうに','2x7':'にしちじゅうし','2x8':'にはちじゅうろく','2x9':'にくじゅうはち',
+    '3x1':'さんいちがさん','3x2':'さんにがろく','3x3':'さざんがく','3x4':'さんしじゅうに','3x5':'さんごじゅうご','3x6':'さぶろくじゅうはち','3x7':'さんしちにじゅういち','3x8':'さんぱにじゅうし','3x9':'さんくにじゅうしち',
+    '4x1':'しいちがし','4x2':'しにがはち','4x3':'しさんじゅうに','4x4':'ししじゅうろく','4x5':'しごにじゅう','4x6':'しろくにじゅうし','4x7':'ししちにじゅうはち','4x8':'しはさんじゅうに','4x9':'しくさんじゅうろく',
+    '5x1':'ごいちがご','5x2':'ごにじゅう','5x3':'ごさんじゅうご','5x4':'ごしにじゅう','5x5':'ごごにじゅうご','5x6':'ごろくさんじゅう','5x7':'ごしちさんじゅうご','5x8':'ごはしじゅう','5x9':'ごっくしじゅうご',
+    '6x1':'ろくいちがろく','6x2':'ろくにじゅうに','6x3':'ろくさんじゅうはち','6x4':'ろくしにじゅうし','6x5':'ろくごさんじゅう','6x6':'ろくろくさんじゅうろく','6x7':'ろくしちしじゅうに','6x8':'ろくはしじゅうはち','6x9':'ろっくごじゅうし',
+    '7x1':'しちいちがしち','7x2':'しちにじゅうし','7x3':'しちさんにじゅういち','7x4':'しちしにじゅうはち','7x5':'しちごさんじゅうご','7x6':'しちろくしじゅうに','7x7':'しちしちしじゅうく','7x8':'しちはごじゅうろく','7x9':'しちくろくじゅうさん',
+    '8x1':'はちいちがはち','8x2':'はちにじゅうろく','8x3':'はちさんにじゅうし','8x4':'はちしさんじゅうに','8x5':'はちごしじゅう','8x6':'はちろくしじゅうはち','8x7':'はちしちごじゅうろく','8x8':'はっぱろくじゅうし','8x9':'はっくしちじゅうに',
+    '9x1':'くいちがく','9x2':'くにじゅうはち','9x3':'くさんにじゅうしち','9x4':'くしさんじゅうろく','9x5':'くごしじゅうご','9x6':'くろくごじゅうし','9x7':'くしちろくじゅうさん','9x8':'くはしちじゅうに','9x9':'くくはちじゅういち'};
 
-// ===== キーパッド（数字ボタン） =====
-function appendDigit(d){ if(answerEl.disabled) return; answerEl.value = (answerEl.value||'') + String(d); }
-function backspace(){ answerEl.value = (answerEl.value||'').slice(0,-1); }
-function clearAns(){ answerEl.value=''; }
-if(keypadEl){
+  // 答え側の読み（後半）生成（例: し／じゅうに／さんじゅう…）
+  const OLD_NUM={1:'いち',2:'に',3:'さん',4:'し',5:'ご',6:'ろく',7:'しち',8:'はち',9:'く'};
+  function numSong(n){
+    if(n<=9) return OLD_NUM[n];
+    const t=Math.floor(n/10), u=n%10;
+    const ten=(t===1?'':(t===4?'し':(t===7?'しち':(t===9?'く':OLD_NUM[t]))))+'じゅう';
+    return ten + (u? OLD_NUM[u] : '');
+  }
+  function phraseSong(a,b){ return CHANT[`${a}x${b}`] || `${a}×${b}`; }
+  function danSong(a){ const lines=[]; for(let b=1;b<=9;b++){ lines.push(phraseSong(a,b)); } return lines; }
+
+  // ===== 音声（歌う） =====
+  function speak(text, rate=0.98, pitch=1.03){
+    try{
+      if(!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const u=new SpeechSynthesisUtterance(text); u.lang='ja-JP'; u.rate=rate; u.pitch=pitch; u.volume=1.0;
+      const vs = speechSynthesis.getVoices(); const jp = vs.find(v=>v.lang && v.lang.startsWith('ja'));
+      if(jp) u.voice = jp; speechSynthesis.speak(u);
+    }catch(e){ console.error(e); }
+  }
+
+  // ===== 出題・判定 =====
+  function current(){ return problems[idx]; }
+
+  function showProblem(){
+    const p=current();
+    if(!p){ finish(); return; }
+    correctMsgEl.textContent='';
+    feedbackEl.textContent='';
+    questionEl.textContent = `${p.a} × ${p.b} = ？`;
+    answerEl.value='';
+    answerEl.readOnly = true; // 数字ボタンで入力
+    answerEl.disabled=false; submitBtn.disabled=false; giveUpBtn.disabled=false; hintBtn.disabled=false;
+    hintArea.textContent='';
+    totalEl.textContent = problems.length; correctEl.textContent = correct; wrongEl.textContent = wrong; streakEl.textContent = streak;
+    progressEl.style.width = `${Math.round((idx)/problems.length*100)}%`;
+  }
+
+  function start(){
+    correct=0; wrong=0; streak=0; idx=0;
+    feedbackEl.textContent=''; correctMsgEl.textContent='';
+    problems = buildProblems();
+    renderBoard();
+    showProblem();
+  }
+
+  function submit(){
+    const p=current(); if(!p) return;
+    const val = Number(answerEl.value);
+    const ok = (p.a*p.b)===val;
+    if(ok){
+      correct++; streak++; p.done=true;
+      correctMsgEl.textContent = 'せいかい！';
+      feedbackEl.innerHTML = `✅ 正解！ <b>${p.a}×${p.b}=${p.a*p.b}</b>`;
+      if(streak>best){ best=streak; localStorage.setItem('kuku_best_streak', String(best)); bestEl.textContent = best; }
+      renderBoard(); idx++;
+      submitBtn.disabled=true; answerEl.disabled=true;
+      setTimeout(showProblem, 450);
+    }else{
+      wrong++; streak=0; p.miss=true;
+      correctMsgEl.textContent='';
+      feedbackEl.textContent = '❌ ちがうよ。もういちど！';
+      renderBoard();
+    }
+    correctEl.textContent = correct; wrongEl.textContent = wrong; streakEl.textContent = streak;
+    progressEl.style.width = `${Math.round((idx)/problems.length*100)}%`;
+  }
+
+  function giveUp(){
+    const p=current(); if(!p) return;
+    wrong++; streak=0; p.miss=true; renderBoard(); idx++;
+    hintArea.textContent=''; correctMsgEl.textContent='';
+    showProblem();
+    wrongEl.textContent = wrong; streakEl.textContent = streak;
+  }
+
+  function finish(){
+    questionEl.textContent = 'おつかれさま！ ぜんぶおわったよ 🎉';
+    answerEl.disabled=true; submitBtn.disabled=true; giveUpBtn.disabled=true; hintBtn.disabled=true;
+    progressEl.style.width = '100%';
+    const rate = problems.length? Math.round(correct/problems.length*100):0;
+    const stars = rate>=95? '★★★' : rate>=80? '★★' : rate>=60? '★' : '—';
+    feedbackEl.innerHTML = `結果: 正解 <b>${correct}</b> / ${problems.length}（正答率 ${rate}%）<br>スター: <b>${stars}</b>`;
+  }
+
+  // ===== キーパッド =====
+  function appendDigit(d){ if(answerEl.disabled) return; answerEl.value = (answerEl.value||'') + String(d); }
+  function backspace(){ answerEl.value = (answerEl.value||'').slice(0,-1); }
+  function clearAns(){ answerEl.value=''; }
   keypadEl.addEventListener('click', (e)=>{
     const btn = e.target.closest('button'); if(!btn) return;
     if(btn.hasAttribute('data-digit')){ appendDigit(btn.getAttribute('data-digit')); }
     else if(btn.getAttribute('data-action')==='back'){ backspace(); }
     else if(btn.getAttribute('data-action')==='clear'){ clearAns(); }
   });
-}
 
-// ===== イベント登録 =====
-startBtn.addEventListener('click', start);
-submitBtn.addEventListener('click', submit);
-nextBtn.addEventListener('click', next);
-speakBtn.addEventListener('click', ()=>{ const p=current(); if(!p) return;
-  if(readModeEl.value==='song') speak(phraseSong(p.a, p.b), 0.95, 1.05);
-  else speak(`${p.a} かける ${p.b} は？`, 0.98, 1.0);
-});
-btnHelp.addEventListener('click', ()=> dlgHelp.showModal());
-singDanBtn.addEventListener('click', ()=>{
-  const val = danEl.value; if(val==='all'){ alert('「ぜんぶ」では だんを歌えません。1〜9のだんをえらんでね'); return; }
-  const a = Number(val); const lines = danSong(a);
-  speak(lines.join('、') + '。', 0.92, 1.05);
-});
+  // ===== イベント =====
+  startBtn.addEventListener('click', start);
+  submitBtn.addEventListener('click', submit);
+  giveUpBtn.addEventListener('click', giveUp);
+  hintBtn.addEventListener('click', ()=>{
+    const p=current(); if(!p) return;
+    const full = phraseSong(p.a,p.b);
+    const prod = numSong(p.a*p.b);
+    const hint = full.endsWith(prod) ? full.slice(0, full.length - prod.length) : full; // 末尾の答え読みを除去
+    hintArea.textContent = hint; // 例: 「ににんが」
+  });
+  singOneBtn.addEventListener('click', ()=>{ const p=current(); if(!p) return; speak( phraseSong(p.a,p.b), 0.95, 1.05 ); });
+  singAllBtn.addEventListener('click', ()=>{
+    const val = danEl.value; if(val==='all'){ alert('「ぜんぶ」では 段を全部歌えません。1〜9のだんをえらんでね'); return; }
+    const a = Number(val); const lines = danSong(a);
+    speak(lines.join('、')+'。', 0.92, 1.05);
+  });
 
-// Enterで回答、Spaceで次へ（Spaceは次へボタン有効時のみ）
-answerEl.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); submit(); } });
-window.addEventListener('keydown',(e)=>{ if(e.key===' ' || e.code==='Space'){ if(!nextBtn.disabled){ e.preventDefault(); next(); } } });
-
-// iOS Safari の getVoices 遅延対策
-if('speechSynthesis' in window){ speechSynthesis.onvoiceschanged = ()=>{} }
-</script>
+  // iOS Safari の getVoices 遅延対策（副作用なし）
+  if('speechSynthesis' in window){ speechSynthesis.onvoiceschanged = ()=>{}; }
+  </script>
 </body>
 </html>
