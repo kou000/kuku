@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>九九れんしゅう（九九の歌）</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #f0f4ff; color: #222; padding: 20px; }
+    h1 { text-align: center; }
+    .problem { font-size: 2em; text-align: center; margin: 20px 0; }
+    .controls, .answerWrap, .numpad { text-align: center; margin: 10px; }
+    button { margin: 5px; padding: 10px 15px; font-size: 1em; }
+    input { font-size: 1.2em; padding: 5px; text-align:center; }
+    .status { text-align: center; margin-top: 20px; }
+    .numpad { display: grid; grid-template-columns: repeat(3, 60px); gap: 10px; justify-content: center; margin-top: 15px; }
+    .numpad button { font-size: 1.2em; padding: 15px; }
+      .keypad { display:grid; grid-template-columns: repeat(3, minmax(64px,1fr)); gap:8px; justify-items:stretch; max-width:420px; margin:12px auto; }
+    .keypad button { padding:14px 0; font-size:1.2em; }
+    .keypad .wide { grid-column: span 3; }
+    .answerDisplay { font-size:1.6em; letter-spacing:.1em; text-align:center; width:10ch; }
+  </style>
+</head>
+<body>
+  <h1>九九れんしゅう（九九の歌）</h1>
+
+  <div class="controls">
+    <label>モード:
+      <select id="mode">
+        <option value="sequential">じゅんばん</option>
+        <option value="random">ランダム</option>
+      </select>
+    </label>
+    <button id="btnStart">▶ スタート</button>
+    <button id="btnSpeak">🗣️ 歌でよむ</button>
+  </div>
+
+  <div id="problem" class="problem">スタートをおしてね</div>
+
+  <div class="answerWrap">
+    <input id="answer" class="answerDisplay" type="text" placeholder="こたえ" inputmode="none" readonly />
+    <div id="keypad" class="keypad" role="group" aria-label="数字キー">
+      <button data-digit="7">7</button>
+      <button data-digit="8">8</button>
+      <button data-digit="9">9</button>
+      <button data-digit="4">4</button>
+      <button data-digit="5">5</button>
+      <button data-digit="6">6</button>
+      <button data-digit="1">1</button>
+      <button data-digit="2">2</button>
+      <button data-digit="3">3</button>
+      <button data-action="clear">クリア</button>
+      <button data-digit="0">0</button>
+      <button data-action="back">⌫</button>
+      <button id="btnSubmit" class="wide" disabled>こたえる</button>
+      <button id="btnNext" class="wide" disabled>つぎへ ▶</button>
+    </div>
+  </div>
+
+  <div class="numpad" id="numpad">
+    <!-- 数字ボタンを動的に作成 -->
+  </div>
+
+  <div class="status">
+    <p>正解: <span id="correct">0</span>　まちがい: <span id="wrong">0</span></p>
+  </div>
+
+  <script>
+    const modeEl = document.getElementById('mode');
+    const startBtn = document.getElementById('btnStart');
+    const speakBtn = document.getElementById('btnSpeak');
+    const problemEl = document.getElementById('problem');
+    const answerEl = document.getElementById('answer');
+    const submitBtn = document.getElementById('btnSubmit');
+    const nextBtn = document.getElementById('btnNext');
+    const keypadEl = document.getElementById('keypad');
+    const correctEl = document.getElementById('correct');
+    const wrongEl = document.getElementById('wrong');
+    const numpad = document.getElementById('numpad');
+
+    let problems = [];
+    let idx = 0;
+    let correct = 0;
+    let wrong = 0;
+
+    function buildProblems() {
+      const list = [];
+      for (let a = 1; a <= 9; a++) {
+        for (let b = 1; b <= 9; b++) {
+          list.push({ a, b });
+        }
+      }
+      if (modeEl.value === 'random') shuffle(list);
+      return list;
+    }
+
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+
+    function current() { return problems[idx]; }
+
+    function showProblem() {
+      const p = current();
+      if (!p) { finish(); return; }
+      problemEl.textContent = `${p.a} × ${p.b} = ？`;
+      answerEl.disabled = false; // ただしreadonlyなのでキーボードは使わない
+      submitBtn.disabled = false;
+      nextBtn.disabled = true;
+      answerEl.value = '';
+    }
+      problemEl.textContent = `${p.a} × ${p.b} = ？`;
+      answerEl.disabled = false;
+      submitBtn.disabled = false;
+      nextBtn.disabled = true;
+      answerEl.value = '';
+    }
+
+    function start() {
+      correct = 0; wrong = 0; idx = 0;
+      problems = buildProblems();
+      showProblem();
+      correctEl.textContent = correct;
+      wrongEl.textContent = wrong;
+    }
+
+    function submit() {
+      const p = current();
+      if (!p) return;
+      const val = Number(answerEl.value);
+      if (val === p.a * p.b) {
+        correct++;
+        idx++;
+        showProblem();
+      } else {
+        wrong++;
+        alert('ちがうよ、もういちど！');
+      }
+      correctEl.textContent = correct;
+      wrongEl.textContent = wrong;
+    }
+
+    function next() {
+      idx++;
+      showProblem();
+    }
+
+    function finish() {
+      problemEl.textContent = 'おつかれさま！ぜんぶおわったよ🎉';
+      answerEl.disabled = true;
+      submitBtn.disabled = true;
+      nextBtn.disabled = true;
+    }
+
+    function speakSong(p) {
+      if (!p) return;
+      if (!('speechSynthesis' in window)) return alert('音声に対応していません');
+      const text = `${p.a}かける${p.b}、${p.a * p.b}`;
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'ja-JP';
+      u.rate = 0.9;
+      u.pitch = 1.4;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(u);
+    }
+
+    function buildNumpad() {
+      numpad.innerHTML = '';
+      for (let i = 1; i <= 9; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.addEventListener('click', () => answerEl.value += i);
+        numpad.appendChild(btn);
+      }
+      const zeroBtn = document.createElement('button');
+      zeroBtn.textContent = '0';
+      zeroBtn.addEventListener('click', () => answerEl.value += '0');
+      numpad.appendChild(zeroBtn);
+
+      const clrBtn = document.createElement('button');
+      clrBtn.textContent = '⌫';
+      clrBtn.addEventListener('click', () => answerEl.value = answerEl.value.slice(0, -1));
+      numpad.appendChild(clrBtn);
+    }
+
+    startBtn.addEventListener('click', () => { start(); buildNumpad(); });
+    submitBtn.addEventListener('click', submit);
+    nextBtn.addEventListener('click', next);
+    speakBtn.addEventListener('click', () => { const p = current(); if (p) speakSong(p); });
+    function appendDigit(d){ if(answerEl.disabled) return; answerEl.value = (answerEl.value||'') + String(d); }
+  function backspace(){ answerEl.value = (answerEl.value||'').slice(0,-1); }
+  function clearAns(){ answerEl.value=''; }
+
+  keypadEl.addEventListener('click', (e)=>{
+    const btn = e.target.closest('button'); if(!btn) return;
+    if(btn.hasAttribute('data-digit')){ appendDigit(btn.getAttribute('data-digit')); }
+    else if(btn.getAttribute('data-action')==='back'){ backspace(); }
+    else if(btn.getAttribute('data-action')==='clear'){ clearAns(); }
+    else if(btn.id==='btnSubmit'){ submit(); }
+    else if(btn.id==='btnNext'){ next(); }
+  });
+
+</script>
+</body>
+</html>
