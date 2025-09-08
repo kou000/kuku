@@ -43,7 +43,7 @@
     .keypad button{padding:18px 0;font-size:1.3em;border-radius:14px}
 
     /* Soroban UI */
-    .soroban{display:none;justify-content:center;gap:12px;margin:16px auto;padding:12px;border-radius:14px;background:#0b1430;border:1px solid rgba(255,255,255,.1)}
+    .soroban{display:flex;justify-content:center;gap:12px;margin:16px auto;padding:12px;border-radius:14px;background:#0b1430;border:1px solid rgba(255,255,255,.1)}
     .soro-col{position:relative;width:54px;display:flex;flex-direction:column;align-items:center;padding:8px}
     .rod{position:absolute;left:50%;top:0;bottom:0;width:3px;background:#3a4674;transform:translateX(-50%);border-radius:2px}
     .divider{position:relative;width:100%;height:10px;background:#21305d;border-radius:8px;margin:8px 0}
@@ -123,14 +123,7 @@
             <option value="600">10ふん</option>
           </select>
         </div>
-        <div class="col">
-          <label for="inputMode">にゅうりょくほうしき</label>
-          <select id="inputMode" aria-label="にゅうりょくほうしき">
-            <option value="keypad" selected>テンキー</option>
-            <option value="soroban">そろばん</option>
-          </select>
-        </div>
-        <div class="row">
+                <div class="row">
           <button id="btnStart" class="primary lg">▶ スタート</button>
           <button id="btnStats" class="lg">📊 とうけい</button>
         </div>
@@ -206,8 +199,7 @@
     const levelEl=$('#level');
     const kAddEl=$('#kAdd'), kSubEl=$('#kSub'), kMulEl=$('#kMul'), kDivEl=$('#kDiv');
     const modeEl=$('#mode'), qcountEl=$('#qcount'), timelimitEl=$('#timelimit');
-    const inputModeEl=$('#inputMode');
-
+    
     const startBtn=$('#btnStart'), statsBtn=$('#btnStats');
     const questionEl=$('#questionText'), answerEl=$('#answer'), submitBtn=$('#btnSubmit'), giveUpBtn=$('#btnGiveUp'), clearBtn=$('#btnClear');
     const feedbackEl=$('#feedback'), correctMsgEl=$('#correctMsg');
@@ -311,13 +303,7 @@
       if(val>=5){ five.classList.add('active'); five.classList.remove('inactive'); val -= 5; }
       for(let i=0;i<val;i++){ ones[i].classList.add('active'); ones[i].classList.remove('inactive'); }
     }
-    function readSoroban(){
-      let total=0; for(const col of sorobanEl.querySelectorAll('.soro-col')){
-        const i = Number(col.dataset.col); const place = 10**i;
-        let v=0; if(col.querySelector('.five.active')) v+=5; const ones=col.querySelectorAll('.one.active').length; v+=ones; total += v*place;
-      } return total;
-    }
-    function attachSorobanEvents(){
+        function attachSorobanEvents(){
       sorobanEl.addEventListener('click', (e)=>{
         const bead = e.target.closest('.bead'); if(!bead) return; const col=e.target.closest('.soro-col'); const isFive = bead.classList.contains('five');
         if(isFive){ const active=bead.classList.contains('active'); bead.classList.toggle('active', !active); bead.classList.toggle('inactive', active); }
@@ -327,28 +313,19 @@
           const clickedIndex = ones.indexOf(bead);
           const newCount = (clickedIndex+1===idxActive)? clickedIndex : (clickedIndex+1); // toggle last one
           ones.forEach((o,i)=>{ o.classList.toggle('active', i<newCount); o.classList.toggle('inactive', i>=newCount); });
-        }
-        answerEl.value = readSoroban();
-      });
+        }      });
     }
-    function clearSoroban(){ for(let i=0;i<SORO_MAX_COLS;i++) setColValue(i,0); answerEl.value=''; }
-
+    
     // keypad actions
     function appendDigit(d){ if(answerEl.disabled) return; answerEl.value = (answerEl.value||'') + String(d); }
     function backspace(){ answerEl.value = (answerEl.value||'').slice(0,-1); }
-    function clearAns(){ answerEl.value=''; if(inputModeEl.value==='soroban') clearSoroban(); }
+    function clearAns(){ answerEl.value=''; }
 
     keypadEl.addEventListener('click',(e)=>{
       const btn=e.target.closest('button'); if(!btn) return;
       if(btn.hasAttribute('data-digit')) appendDigit(btn.getAttribute('data-digit'));
       else if(btn.getAttribute('data-action')==='back') backspace();
       else if(btn.getAttribute('data-action')==='clear') clearAns();
-    });
-
-    inputModeEl.addEventListener('change', ()=>{
-      const mode=inputModeEl.value;
-      if(mode==='keypad'){ keypadEl.style.display='grid'; sorobanEl.style.display='none'; }
-      else{ keypadEl.style.display='none'; sorobanEl.style.display='flex'; clearAns(); }
     });
 
     // core flow
@@ -359,7 +336,6 @@
       answerEl.value=''; answerEl.disabled=false; submitBtn.disabled=false; giveUpBtn.disabled=false; clearBtn.disabled=false;
       remainEl.textContent = String(problems.length - idx);
       progressEl.style.width = `${Math.round((idx)/problems.length*100)}%`;
-      if(inputModeEl.value==='soroban'){ clearSoroban(); }
     }
 
     function start(){
@@ -413,7 +389,7 @@
     resetBtn.addEventListener('click', resetStats);
 
     // init
-    buildSoroban(); attachSorobanEvents(); inputModeEl.dispatchEvent(new Event('change'));
+    buildSoroban(); attachSorobanEvents(); 
   </script>
 </body>
 </html>
