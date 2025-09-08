@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <title>そろばんれんしゅう</title>
+  <style>
+    :root{ --bg:#0b1020; --card:#111933; --acc:#4fa3ff; --ok:#22c55e; --bad:#ef4444; --text:#e9eefb; }
+    *{box-sizing:border-box}
+    body{margin:0;padding:16px 16px 40px;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,"ヒラギノ角ゴ ProN","Noto Sans JP",sans-serif}
+    .container{max-width:1100px;margin:0 auto}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
+    h1{font-size:clamp(20px,4vw,28px);margin:0}
+    a.nav{color:#cfe3ff;text-decoration:none}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,.05),transparent 30%) ,var(--card);border:1px solid rgba(255,255,255,.08);padding:16px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    .col{display:flex;flex-direction:column;gap:6px}
+    label{font-size:14px;opacity:.9}
+    select,button,input[type="text"],input[type="number"]{background:#0b1430;color:var(--text);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:10px 12px;font-size:16px}
+    button{cursor:pointer;touch-action:manipulation}
+    button.primary{background:var(--acc);border-color:transparent;color:#001326;font-weight:700}
+    button.ghost{background:transparent}
+    button.lg{font-size:20px;padding:12px 16px;border-radius:14px}
+    .controls{display:grid;grid-template-columns:1fr;gap:12px}
+    @media(min-width:900px){.controls{grid-template-columns:1.3fr 1.2fr auto}}
+    .status{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:6px 10px;font-size:13px;opacity:.9}
+    .bar{height:10px;background:#0b1430;border-radius:999px;overflow:hidden}
+    .bar .fill{height:100%;background:linear-gradient(90deg,var(--acc),#8ef0ff);width:0%}
+
+    .problem{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-weight:800;font-size:clamp(22px,6.5vw,52px);min-height:120px;text-align:center}
+    .correctMsg{font-size:24px;color:var(--ok);font-weight:700;min-height:1.2em}
+    .feedbackMsg{font-size:18px;margin-top:2px;min-height:1.2em}
+    .answerWrap{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:8px;flex-wrap:wrap}
+    .answerWrap input{font-size:clamp(20px,5vw,36px);width:10ch;text-align:center}
+
+    .gridBoard{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin-top:10px}
+    .chip{background:#0b1430;border:1px solid rgba(255,255,255,.15);padding:8px;border-radius:10px;text-align:center}
+    .chip.done{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.5)}
+    .chip.miss{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.5)}
+
+    .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:360px;margin:16px auto}
+    .keypad button{padding:18px 0;font-size:1.3em;border-radius:14px}
+
+    /* Soroban UI */
+    .soroban{display:none;justify-content:center;gap:12px;margin:16px auto;padding:12px;border-radius:14px;background:#0b1430;border:1px solid rgba(255,255,255,.1)}
+    .soro-col{position:relative;width:54px;display:flex;flex-direction:column;align-items:center;padding:8px}
+    .rod{position:absolute;left:50%;top:0;bottom:0;width:3px;background:#3a4674;transform:translateX(-50%);border-radius:2px}
+    .divider{position:relative;width:100%;height:10px;background:#21305d;border-radius:8px;margin:8px 0}
+    .bead{width:44px;height:22px;background:#d8a15f;border-radius:999px;border:1px solid rgba(0,0,0,.35);box-shadow:inset 0 -2px 0 rgba(0,0,0,.25);transition:transform .12s ease, opacity .12s}
+    .five{margin-bottom:8px}
+    .onesArea{display:flex;flex-direction:column;gap:8px}
+    .bead.inactive{opacity:.5}
+    /* positions */
+    .five.active{transform:translateY(20px)}
+    .five.inactive{transform:translateY(0)}
+    .one.active{transform:translateY(-20px)}
+    .one.inactive{transform:translateY(0)}
+
+    .timer{font-variant-numeric:tabular-nums}
+    table{width:100%;border-collapse:collapse}
+    th,td{border-bottom:1px solid rgba(255,255,255,.12);padding:8px;text-align:left}
+    th{opacity:.85;font-weight:700}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>➗ そろばんれんしゅう</h1>
+      <a class="nav" href="index.html">九九へ ↗</a>
+    </header>
+
+    <!-- Controls -->
+    <section class="card controls" aria-label="せってい">
+      <div class="row" style="align-items:end">
+        <div class="col">
+          <label for="level">きゅう</label>
+          <select id="level" aria-label="きゅう">
+            <option value="10">10きゅう</option>
+            <option value="9">9きゅう</option>
+            <option value="8">8きゅう</option>
+            <option value="7">7きゅう</option>
+            <option value="6">6きゅう</option>
+            <option value="5">5きゅう</option>
+            <option value="4">4きゅう</option>
+            <option value="3">3きゅう</option>
+            <option value="2">2きゅう</option>
+            <option value="1">1きゅう</option>
+          </select>
+        </div>
+        <div class="col">
+          <label>しゅもく</label>
+          <div class="row">
+            <label><input type="checkbox" id="kAdd" checked> たしざん</label>
+            <label><input type="checkbox" id="kSub" checked> ひきざん</label>
+            <label><input type="checkbox" id="kMul"> かけざん</label>
+            <label><input type="checkbox" id="kDiv"> わりざん</label>
+          </div>
+        </div>
+        <div class="col">
+          <label for="mode">モード</label>
+          <select id="mode" aria-label="モード">
+            <option value="normal">ふつう</option>
+            <option value="mistake">よくまちがえる</option>
+            <option value="time">タイムトライアル</option>
+          </select>
+        </div>
+        <div class="col">
+          <label for="qcount">もんだいすう</label>
+          <select id="qcount">
+            <option>10</option>
+            <option selected>20</option>
+            <option>30</option>
+            <option>40</option>
+          </select>
+        </div>
+        <div class="col">
+          <label for="timelimit">じかん</label>
+          <select id="timelimit">
+            <option value="0">なし</option>
+            <option value="180">3ふん</option>
+            <option value="300" selected>5ふん</option>
+            <option value="600">10ふん</option>
+          </select>
+        </div>
+        <div class="col">
+          <label for="inputMode">にゅうりょくほうしき</label>
+          <select id="inputMode" aria-label="にゅうりょくほうしき">
+            <option value="keypad" selected>テンキー</option>
+            <option value="soroban">そろばん</option>
+          </select>
+        </div>
+        <div class="row">
+          <button id="btnStart" class="primary lg">▶ スタート</button>
+          <button id="btnStats" class="lg">📊 とうけい</button>
+        </div>
+      </div>
+      <div class="status" style="margin-top:6px">
+        <div class="pill">のこり: <span id="remain">0</span> / せい: <span id="correct">0</span> / ご: <span id="wrong">0</span> ・ れんぞく: <span id="streak">0</span></div>
+        <div class="pill timer">⌛ <span id="timer">--:--</span></div>
+      </div>
+      <div class="bar" aria-hidden="true"><div class="fill" id="progress"></div></div>
+    </section>
+
+    <!-- Problem -->
+    <section class="card" style="margin-top:14px">
+      <div id="problem" class="problem" aria-live="polite" aria-atomic="true">
+        <div id="correctMsg" class="correctMsg"></div>
+        <div id="questionText">スタートをおしてね</div>
+        <div id="feedback" class="feedbackMsg"></div>
+      </div>
+      <div class="answerWrap">
+        <input id="answer" type="text" inputmode="none" placeholder="こたえ" readonly disabled />
+        <button id="btnSubmit" class="primary" disabled>こたえる</button>
+        <button id="btnGiveUp" disabled>わからない（×）</button>
+        <button id="btnClear" disabled>クリア</button>
+      </div>
+
+      <!-- keypad -->
+      <div id="keypad" class="keypad" role="group" aria-label="すうじキー">
+        <button data-digit="1">1</button>
+        <button data-digit="2">2</button>
+        <button data-digit="3">3</button>
+        <button data-digit="4">4</button>
+        <button data-digit="5">5</button>
+        <button data-digit="6">6</button>
+        <button data-digit="7">7</button>
+        <button data-digit="8">8</button>
+        <button data-digit="9">9</button>
+        <button data-action="clear">クリア</button>
+        <button data-digit="0">0</button>
+        <button data-action="back">⌫</button>
+      </div>
+
+      <!-- soroban -->
+      <div id="sorobanUI" class="soroban" aria-label="そろばん">
+        <!-- columns will be injected by JS -->
+      </div>
+
+      <div id="board" class="gridBoard" aria-label="すすみぐあい"></div>
+    </section>
+
+    <!-- stats -->
+    <section id="statsPanel" class="card" style="display:none; margin-top:14px">
+      <div class="row" style="justify-content:space-between">
+        <h2>📊 とうけい</h2>
+        <div class="row">
+          <button id="btnReset" class="ghost">リセット</button>
+          <button id="btnCloseStats" class="ghost">とじる</button>
+        </div>
+      </div>
+      <div id="statsSummary" style="opacity:.8;margin-bottom:8px"></div>
+      <div style="overflow:auto">
+        <table id="statsTable"><thead><tr><th>しき</th><th>せい</th><th>ご</th><th>せいとうりつ</th><th>さいきん</th></tr></thead><tbody></tbody></table>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    // === helpers ===
+    const $ = (s)=>document.querySelector(s);
+    const $$ = (s)=>document.querySelectorAll(s);
+
+    // elements
+    const levelEl=$('#level');
+    const kAddEl=$('#kAdd'), kSubEl=$('#kSub'), kMulEl=$('#kMul'), kDivEl=$('#kDiv');
+    const modeEl=$('#mode'), qcountEl=$('#qcount'), timelimitEl=$('#timelimit');
+    const inputModeEl=$('#inputMode');
+
+    const startBtn=$('#btnStart'), statsBtn=$('#btnStats');
+    const questionEl=$('#questionText'), answerEl=$('#answer'), submitBtn=$('#btnSubmit'), giveUpBtn=$('#btnGiveUp'), clearBtn=$('#btnClear');
+    const feedbackEl=$('#feedback'), correctMsgEl=$('#correctMsg');
+    const remainEl=$('#remain'), correctEl=$('#correct'), wrongEl=$('#wrong'), streakEl=$('#streak');
+    const progressEl=$('#progress'), timerEl=$('#timer');
+    const boardEl=$('#board'), statsPanel=$('#statsPanel'), closeStatsBtn=$('#btnCloseStats'), resetBtn=$('#btnReset');
+    const keypadEl=$('#keypad'), sorobanEl=$('#sorobanUI');
+
+    // state
+    let problems=[], idx=0, correct=0, wrong=0, streak=0;
+    let countdownId=null, remainSec=0;
+
+    // storage
+    const STATS_KEY='srb_stats_v1';
+    function loadStats(){ try{ return JSON.parse(localStorage.getItem(STATS_KEY)||'{}'); }catch(e){ return {}; } }
+    function saveStats(s){ try{ localStorage.setItem(STATS_KEY, JSON.stringify(s)); }catch(e){} }
+    function bumpStat(id,ok){ const s=loadStats(); if(!s[id]) s[id]={correct:0,wrong:0,last:0}; if(ok) s[id].correct++; else s[id].wrong++; s[id].last=Date.now(); saveStats(s); }
+
+    // === level rules (MVP) ===
+    const LEVEL_RULES={
+      10:{ kinds:['add','sub'], q:20, t:300, add:{digits:[1,1], carry:'none'}, sub:{minu:2, sub:1, borrow:'none'} },
+      9:{ kinds:['add','sub'], q:20, t:300, add:{digits:[2,1], carry:'none'}, sub:{minu:2, sub:1, borrow:'none'} },
+      8:{ kinds:['add','sub'], q:20, t:360, add:{digits:[2,2], carry:'light'}, sub:{minu:2, sub:2, borrow:'light'} },
+      7:{ kinds:['mul'], q:15, t:360, mul:{l:2, r:1} },
+      6:{ kinds:['div'], q:15, t:360, div:{dd:2, dz:1, exact:true} },
+      5:{ kinds:['add','sub'], q:20, t:420, add:{digits:[3,2], carry:'allow'}, sub:{minu:3, sub:2, borrow:'allow'} },
+      4:{ kinds:['mul'], q:15, t:420, mul:{l:3, r:1} },
+      3:{ kinds:['div'], q:15, t:480, div:{dd:3, dz:1, exact:true} },
+      2:{ kinds:['add','sub','mul','div'], q:20, t:600, add:{digits:[3,3], carry:'allow'}, sub:{minu:3, sub:3, borrow:'allow'}, mul:{l:3,r:2}, div:{dd:3,dz:2, exact:true} },
+      1:{ kinds:['add','sub','mul','div'], q:20, t:720, add:{digits:[4,4], carry:'allow'}, sub:{minu:4, sub:4, borrow:'allow'}, mul:{l:4,r:2}, div:{dd:4,dz:2, exact:true} }
+    };
+
+    function randInt(a,b){ return (Math.random()*(b-a+1) | 0) + a; }
+
+    // generators
+    function genAdd(d1,d2,carry){
+      const min1 = 10**(d1-1), max1 = 10**d1 - 1;
+      const min2 = 10**(d2-1), max2 = 10**d2 - 1;
+      let a,b; let tries=0;
+      while(true){ a=randInt(min1,max1); b=randInt(min2,max2); const s=a+b; const c10 = (a%10)+(b%10) >= 10; const c100 = ((a%100)+(b%100))>=100;
+        const heavy = c10 && c100; const light = c10 || c100; if(carry==='none' && !light) break; if(carry==='light' && light && !heavy) break; if(carry==='allow') break; if(++tries>1000) break; }
+      return {id:`add:${a}+${b}` , expr:`${a} + ${b}` , answer:a+b, kind:'add'};
+    }
+    function genSub(minuDigits, subDigits, borrow){
+      const A=randInt(10**(minuDigits-1), 10**minuDigits-1);
+      const B=randInt(10**(subDigits-1), 10**subDigits-1);
+      let a=A, b=B; let tries=0;
+      while(true){ if(a<b){ a=A; b=randInt(1, a); }
+        const b10 = (a%10) < (b%10); const b100 = (a%100) < (b%100);
+        const heavy = b10 && b100; const light = b10 || b100;
+        if(borrow==='none' && !light) break; if(borrow==='light' && light && !heavy) break; if(borrow==='allow') break; if(++tries>1000) break;
+        a=randInt(10**(minuDigits-1), 10**minuDigits-1); b=randInt(10**(subDigits-1), Math.min(a,10**subDigits-1));
+      }
+      return {id:`sub:${a}-${b}` , expr:`${a} - ${b}` , answer:a-b, kind:'sub'};
+    }
+    function genMul(ld, rd){ const a=randInt(10**(ld-1),10**ld-1); const b=randInt(10**(rd-1),10**rd-1); return {id:`mul:${a}×${b}`, expr:`${a} × ${b}`, answer:a*b, kind:'mul'}; }
+    function genDiv(dd, dz, exact){ let a,b; let tries=0; while(true){ b=randInt(10**(dz-1),10**dz-1); if(b===0) continue; a=randInt(10**(dd-1),10**dd-1); if(!exact || a%b===0) break; if(++tries>2000){ const q=randInt(2,9); b=randInt(2,9); a=q*b; break; } } return {id:`div:${a}÷${b}`, expr:`${a} ÷ ${b}`, answer:Math.floor(a/b), kind:'div'}; }
+
+    function buildProblems(){
+      const lv = Number(levelEl.value);
+      const base = LEVEL_RULES[lv];
+      const qN = Number(qcountEl.value) || base.q;
+      const enabledKinds = [kAddEl.checked&&'add', kSubEl.checked&&'sub', kMulEl.checked&&'mul', kDivEl.checked&&'div'].filter(Boolean);
+      const kinds = enabledKinds.length? enabledKinds : base.kinds;
+
+      const out=[]; const recent=new Set();
+      while(out.length<qN){
+        const k = kinds[ randInt(0, kinds.length-1) ]; let q;
+        if(k==='add'){ const {digits,carry} = base.add || {digits:[2,1], carry:'allow'}; q = genAdd(digits[0],digits[1],carry); }
+        else if(k==='sub'){ const {minu,sub,borrow} = base.sub || {minu:2,sub:1,borrow:'allow'}; q = genSub(minu,sub,borrow); }
+        else if(k==='mul'){ const {l,r} = base.mul || {l:2,r:1}; q = genMul(l,r); }
+        else { const {dd,dz,exact} = base.div || {dd:2,dz:1,exact:true}; q = genDiv(dd,dz,exact); }
+        if(recent.has(q.id)) continue; recent.add(q.id); out.push(q);
+      }
+      return out;
+    }
+
+    function renderBoard(){ boardEl.innerHTML=''; problems.forEach((p,i)=>{ const d=document.createElement('div'); d.className='chip'+(p.done?' done':'')+(p.miss?' miss':''); d.textContent = p.expr; boardEl.appendChild(d); }); }
+
+    // === soroban UI ===
+    const SORO_MAX_COLS = 7; // 100万まで（必要に応じて増やす）
+    function buildSoroban(){
+      sorobanEl.innerHTML='';
+      for(let i=0;i<SORO_MAX_COLS;i++){
+        const col=document.createElement('div'); col.className='soro-col'; col.dataset.col=i; // i=0 が 1の位
+        const rod=document.createElement('div'); rod.className='rod'; col.appendChild(rod);
+        const five=document.createElement('div'); five.className='bead five inactive'; five.dataset.value='5'; five.title='5'; col.appendChild(five);
+        const divider=document.createElement('div'); divider.className='divider'; col.appendChild(divider);
+        const onesArea=document.createElement('div'); onesArea.className='onesArea';
+        for(let j=0;j<4;j++){ const one=document.createElement('div'); one.className='bead one inactive'; one.dataset.value='1'; one.title='1'; onesArea.appendChild(one); }
+        col.appendChild(onesArea);
+        sorobanEl.appendChild(col);
+      }
+    }
+    function setColValue(colIndex, val){ // 0..9
+      const col = sorobanEl.querySelector(`.soro-col[data-col="${colIndex}"]`); if(!col) return;
+      const five = col.querySelector('.five'); const ones = col.querySelectorAll('.one');
+      // reset
+      five.classList.remove('active'); five.classList.add('inactive');
+      ones.forEach(o=>{ o.classList.remove('active'); o.classList.add('inactive'); });
+      if(val>=5){ five.classList.add('active'); five.classList.remove('inactive'); val -= 5; }
+      for(let i=0;i<val;i++){ ones[i].classList.add('active'); ones[i].classList.remove('inactive'); }
+    }
+    function readSoroban(){
+      let total=0; for(const col of sorobanEl.querySelectorAll('.soro-col')){
+        const i = Number(col.dataset.col); const place = 10**i;
+        let v=0; if(col.querySelector('.five.active')) v+=5; const ones=col.querySelectorAll('.one.active').length; v+=ones; total += v*place;
+      } return total;
+    }
+    function attachSorobanEvents(){
+      sorobanEl.addEventListener('click', (e)=>{
+        const bead = e.target.closest('.bead'); if(!bead) return; const col=e.target.closest('.soro-col'); const isFive = bead.classList.contains('five');
+        if(isFive){ const active=bead.classList.contains('active'); bead.classList.toggle('active', !active); bead.classList.toggle('inactive', active); }
+        else{
+          // make contiguous from nearest to divider: activate top-N
+          const ones=[...col.querySelectorAll('.one')]; const idxActive = ones.filter(o=>o.classList.contains('active')).length;
+          const clickedIndex = ones.indexOf(bead);
+          const newCount = (clickedIndex+1===idxActive)? clickedIndex : (clickedIndex+1); // toggle last one
+          ones.forEach((o,i)=>{ o.classList.toggle('active', i<newCount); o.classList.toggle('inactive', i>=newCount); });
+        }
+        answerEl.value = readSoroban();
+      });
+    }
+    function clearSoroban(){ for(let i=0;i<SORO_MAX_COLS;i++) setColValue(i,0); answerEl.value=''; }
+
+    // keypad actions
+    function appendDigit(d){ if(answerEl.disabled) return; answerEl.value = (answerEl.value||'') + String(d); }
+    function backspace(){ answerEl.value = (answerEl.value||'').slice(0,-1); }
+    function clearAns(){ answerEl.value=''; if(inputModeEl.value==='soroban') clearSoroban(); }
+
+    keypadEl.addEventListener('click',(e)=>{
+      const btn=e.target.closest('button'); if(!btn) return;
+      if(btn.hasAttribute('data-digit')) appendDigit(btn.getAttribute('data-digit'));
+      else if(btn.getAttribute('data-action')==='back') backspace();
+      else if(btn.getAttribute('data-action')==='clear') clearAns();
+    });
+
+    inputModeEl.addEventListener('change', ()=>{
+      const mode=inputModeEl.value;
+      if(mode==='keypad'){ keypadEl.style.display='grid'; sorobanEl.style.display='none'; }
+      else{ keypadEl.style.display='none'; sorobanEl.style.display='flex'; clearAns(); }
+    });
+
+    // core flow
+    function current(){ return problems[idx]; }
+
+    function showProblem(){ const p=current(); if(!p){ finish(); return; }
+      correctMsgEl.textContent=''; feedbackEl.textContent=''; questionEl.textContent = `${p.expr} = ？`;
+      answerEl.value=''; answerEl.disabled=false; submitBtn.disabled=false; giveUpBtn.disabled=false; clearBtn.disabled=false;
+      remainEl.textContent = String(problems.length - idx);
+      progressEl.style.width = `${Math.round((idx)/problems.length*100)}%`;
+      if(inputModeEl.value==='soroban'){ clearSoroban(); }
+    }
+
+    function start(){
+      correct=0; wrong=0; streak=0; idx=0; remainSec = Number(timelimitEl.value) || (LEVEL_RULES[levelEl.value]?.t || 0);
+      problems = buildProblems(); renderBoard();
+      if(modeEl.value==='mistake'){ // ざっくり：正答率低いものを優先（別実装でもOK）
+        const s=loadStats(); problems.sort((a,b)=>{
+          const A=s[a.id]||{correct:0,wrong:0}; const B=s[b.id]||{correct:0,wrong:0};
+          const rA=(A.wrong+1)/(A.correct+A.wrong+2); const rB=(B.wrong+1)/(B.correct+B.wrong+2); return rB-rA; });
+      }
+      if(modeEl.value==='time' && remainSec>0){ startTimer(); }
+      else { stopTimer(); timerEl.textContent='--:--'; }
+      showProblem();
+    }
+
+    function submit(){ const p=current(); if(!p) return; const val = Number(answerEl.value);
+      const ok = (val===p.answer);
+      bumpStat(p.id, ok);
+      if(ok){ correct++; streak++; p.done=true; correctMsgEl.textContent='せいかい！'; feedbackEl.textContent=''; idx++; }
+      else{ wrong++; streak=0; p.miss=true; correctMsgEl.textContent=''; feedbackEl.textContent='❌ ちがうよ。もういちど！'; }
+      correctEl.textContent=correct; wrongEl.textContent=wrong; streakEl.textContent=streak; renderBoard();
+      if(ok) setTimeout(showProblem, 320);
+    }
+
+    function giveUp(){ const p=current(); if(!p) return; p.miss=true; bumpStat(p.id,false); wrong++; streak=0; idx++; correctMsgEl.textContent=''; feedbackEl.textContent=''; showProblem(); wrongEl.textContent=wrong; streakEl.textContent=streak; }
+
+    function finish(){ questionEl.textContent='おつかれさま！ ぜんぶおわったよ 🎉'; answerEl.disabled=true; submitBtn.disabled=true; giveUpBtn.disabled=true; clearBtn.disabled=true; progressEl.style.width='100%'; stopTimer(); }
+
+    function startTimer(){ stopTimer(); tickTimer(); countdownId = setInterval(tickTimer, 1000); }
+    function stopTimer(){ if(countdownId){ clearInterval(countdownId); countdownId=null; } }
+    function tickTimer(){ if(remainSec<=0){ timerEl.textContent='00:00'; stopTimer(); finish(); return; } remainSec--; const m=String(Math.floor(remainSec/60)).padStart(2,'0'); const s=String(remainSec%60).padStart(2,'0'); timerEl.textContent=`${m}:${s}`; }
+
+    // stats panel
+    function formatDate(ts){ if(!ts) return '-'; const d=new Date(ts); const z=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}/${z(d.getMonth()+1)}/${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`; }
+    function openStats(){ statsPanel.style.display='block'; renderStats(); }
+    function closeStats(){ statsPanel.style.display='none'; }
+    function resetStats(){ if(confirm('きろくをリセットしますか？')){ localStorage.removeItem(STATS_KEY); renderStats(); } }
+    function renderStats(){ const s=loadStats(); const rows=[]; let totC=0, totW=0; for(const id in s){ const {correct,wrong,last}=s[id]; rows.push({id,correct,wrong,last}); totC+=correct; totW+=wrong; }
+      rows.sort((a,b)=>{ const ta=a.correct+a.wrong, tb=b.correct+b.wrong; const ra=ta? a.wrong/ta : 1, rb=tb? b.wrong/tb : 1; return (rb-ra)|| (tb-ta) || (b.wrong-a.wrong); });
+      const tbody=$('#statsTable tbody'); tbody.innerHTML=''; rows.slice(0,60).forEach(r=>{ const tr=document.createElement('tr'); const rate=(r.correct+r.wrong)? Math.round(r.correct/(r.correct+r.wrong)*100) : 0; tr.innerHTML=`<td>${r.id.replace(':',' ').replace('×','×').replace('÷','÷')}</td><td>${r.correct}</td><td>${r.wrong}</td><td>${rate}%</td><td>${formatDate(r.last)}</td>`; tbody.appendChild(tr); });
+      const tries=totC+totW; const acc=tries? Math.round(totC/tries*100):0; $('#statsSummary').innerHTML = `ごうけい: せい <b>${totC}</b> / ご <b>${totW}</b>（せいとうりつ <b>${acc}%</b>）`;
+    }
+
+    // events
+    startBtn.addEventListener('click', start);
+    submitBtn.addEventListener('click', submit);
+    giveUpBtn.addEventListener('click', giveUp);
+    clearBtn.addEventListener('click', clearAns);
+    statsBtn.addEventListener('click', openStats);
+    closeStatsBtn.addEventListener('click', closeStats);
+    resetBtn.addEventListener('click', resetStats);
+
+    // init
+    buildSoroban(); attachSorobanEvents(); inputModeEl.dispatchEvent(new Event('change'));
+  </script>
+</body>
+</html>
